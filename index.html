@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yiğit Automotive</title>
+<title>Yiğit Automotive V6</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body{
@@ -14,21 +16,21 @@ body{
 }
 
 header{
-    padding:20px;
+    padding:18px;
     text-align:center;
-    font-size:28px;
+    font-size:26px;
     font-weight:bold;
     background:#111a2e;
 }
 
 .container{padding:20px;}
 
-input{
+input,select{
     width:100%;
     padding:12px;
     border:none;
     border-radius:8px;
-    margin-bottom:15px;
+    margin-bottom:10px;
 }
 
 .grid{
@@ -59,99 +61,80 @@ button{
     cursor:pointer;
 }
 
-.fav{background:#f59e0b;}
+.fav{background:#f59e0b;color:black;}
 .sel{background:#3b82f6;color:white;}
 
-.topbar{
-    display:flex;
-    gap:8px;
-    margin-bottom:15px;
-}
-
-.topbar button{
-    flex:1;
-    background:#1f2a44;
-    color:white;
-}
-
-.compareBox{
+.panel{
     background:#1f2a44;
     padding:15px;
     border-radius:10px;
     margin-bottom:15px;
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-td,th{
-    border:1px solid #333;
-    padding:8px;
-    text-align:center;
 }
 </style>
 </head>
 
 <body>
 
-<header>🚗 Yiğit Automotive V3</header>
+<header>🚗 Yiğit Automotive V6</header>
 
 <div class="container">
 
 <input id="search" placeholder="Araba ara..." oninput="render()">
 
-<div class="topbar">
-<button onclick="mode='all';render()">Tümü</button>
-<button onclick="mode='fav';render()">Favoriler</button>
-<button onclick="mode='power';render()">En Güçlü</button>
-<button onclick="mode='fast';render()">En Hızlı</button>
-</div>
+<select id="brand" onchange="render()">
+<option value="all">Tüm Markalar</option>
+<option value="BMW">BMW</option>
+<option value="Mercedes">Mercedes</option>
+<option value="Audi">Audi</option>
+<option value="Toyota">Toyota</option>
+<option value="Ferrari">Ferrari</option>
+</select>
 
-<div class="compareBox">
-<h3>⚖️ Karşılaştır (2 araba seç)</h3>
+<div class="panel">
+<h3>⚖️ Karşılaştırma Paneli</h3>
 <div id="selected">Seçim yok</div>
 <button onclick="compare()">Karşılaştır</button>
 </div>
 
 <div class="grid" id="list"></div>
 
-<div id="result"></div>
+<canvas id="chart" style="margin-top:20px;"></canvas>
 
 </div>
 
 <script>
 
-let mode="all";
-let selected=[];
+let selected = JSON.parse(localStorage.getItem("selected")||"[]");
 
-let cars=[
-{name:"BMW M3",hp:510,speed:3.9,img:"https://upload.wikimedia.org/wikipedia/commons/1/18/BMW_M3_G80.jpg",fav:false},
-{name:"BMW M5",hp:727,speed:3.4,img:"https://upload.wikimedia.org/wikipedia/commons/2/2d/BMW_M5_F90.jpg",fav:false},
-{name:"Mercedes C63",hp:680,speed:3.4,img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Mercedes-AMG_C63_S.jpg",fav:false},
-{name:"Mercedes E63",hp:612,speed:3.3,img:"https://upload.wikimedia.org/wikipedia/commons/0/0e/Mercedes-AMG_E63_S.jpg",fav:false},
-{name:"Audi RS5",hp:450,speed:3.7,img:"https://upload.wikimedia.org/wikipedia/commons/6/6e/Audi_RS5.jpg",fav:false},
-{name:"Audi RS7",hp:600,speed:3.5,img:"https://upload.wikimedia.org/wikipedia/commons/4/4f/Audi_RS7.jpg",fav:false},
-{name:"Toyota Supra",hp:382,speed:4.1,img:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_Supra_A90.jpg",fav:false},
-{name:"Nissan GTR",hp:600,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/3/3a/Nissan_GT-R.jpg",fav:false},
-{name:"Porsche 911 Turbo S",hp:650,speed:2.7,img:"https://upload.wikimedia.org/wikipedia/commons/0/0b/Porsche_911_Turbo_S.jpg",fav:false},
-{name:"Chevrolet Corvette",hp:495,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/4/4c/Chevrolet_Corvette_C8.jpg",fav:false},
-{name:"Lamborghini Huracan",hp:640,speed:2.8,img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Lamborghini_Huracan.jpg",fav:false},
-{name:"Ferrari F8",hp:720,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/7/7d/Ferrari_F8_Tributo.jpg",fav:false}
+const cars=[
+{name:"BMW M3",brand:"BMW",hp:510,speed:3.9,img:"https://upload.wikimedia.org/wikipedia/commons/1/18/BMW_M3_G80.jpg"},
+{name:"BMW M5",brand:"BMW",hp:727,speed:3.4,img:"https://upload.wikimedia.org/wikipedia/commons/2/2d/BMW_M5_F90.jpg"},
+{name:"Mercedes C63",brand:"Mercedes",hp:680,speed:3.4,img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Mercedes-AMG_C63_S.jpg"},
+{name:"Audi RS5",brand:"Audi",hp:450,speed:3.7,img:"https://upload.wikimedia.org/wikipedia/commons/6/6e/Audi_RS5.jpg"},
+{name:"Toyota Supra",brand:"Toyota",hp:382,speed:4.1,img:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_Supra_A90.jpg"},
+{name:"Ferrari F8",brand:"Ferrari",hp:720,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/7/7d/Ferrari_F8_Tributo.jpg"},
+{name:"Lamborghini Huracan",brand:"Ferrari",hp:640,speed:2.8,img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Lamborghini_Huracan.jpg"},
+{name:"Nissan GTR",brand:"Toyota",hp:600,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/3/3a/Nissan_GT-R.jpg"}
 ];
+
+function save(){
+localStorage.setItem("selected",JSON.stringify(selected));
+}
 
 function render(){
 
 let q=document.getElementById("search").value.toLowerCase();
+let brand=document.getElementById("brand").value;
+
 let list=document.getElementById("list");
 list.innerHTML="";
 
 let data=cars.filter(c=>c.name.toLowerCase().includes(q));
 
-if(mode==="fav") data=data.filter(c=>c.fav);
-if(mode==="power") data=data.sort((a,b)=>b.hp-a.hp);
-if(mode==="fast") data=data.sort((a,b)=>a.speed-b.speed);
+if(brand!=="all") data=data.filter(c=>c.brand===brand);
+
+// HP’ye göre otomatik güçlüden zayıfa
+data.sort((a,b)=>b.hp-a.hp);
 
 data.forEach(c=>{
 
@@ -159,25 +142,27 @@ list.innerHTML+=`
 <div class="card">
 <img src="${c.img}">
 <h3>${c.name}</h3>
+<p>🏷️ ${c.brand}</p>
 <p>💪 ${c.hp} HP</p>
 <p>⚡ 0-100: ${c.speed}s</p>
 
 <button class="fav" onclick="fav('${c.name}')">⭐ Favori</button>
-<button class="sel" onclick="select('${c.name}')">⚖️ Seç</button>
+<button class="sel" onclick="selectCar('${c.name}')">⚖️ Seç</button>
 </div>
 `;
 
 });
 
+document.getElementById("selected").innerHTML =
+selected.length?selected.join(" vs "):"Seçim yok";
 }
 
 function fav(name){
 let c=cars.find(x=>x.name===name);
 c.fav=!c.fav;
-render();
 }
 
-function select(name){
+function selectCar(name){
 
 if(selected.includes(name)){
 selected=selected.filter(x=>x!==name);
@@ -185,8 +170,8 @@ selected=selected.filter(x=>x!==name);
 if(selected.length<2) selected.push(name);
 }
 
-document.getElementById("selected").innerHTML=
-selected.length?selected.join(" vs "):"Seçim yok";
+save();
+render();
 }
 
 function compare(){
@@ -199,15 +184,27 @@ return;
 let a=cars.find(x=>x.name===selected[0]);
 let b=cars.find(x=>x.name===selected[1]);
 
-document.getElementById("result").innerHTML=`
-<div class="compareBox">
-<table>
-<tr><th>Özellik</th><th>${a.name}</th><th>${b.name}</th></tr>
-<tr><td>HP</td><td>${a.hp}</td><td>${b.hp}</td></tr>
-<tr><td>0-100</td><td>${a.speed}s</td><td>${b.speed}s</td></tr>
-</table>
-</div>
-`;
+let ctx=document.getElementById("chart");
+
+new Chart(ctx,{
+type:"bar",
+data:{
+labels:["HP","0-100 (ters)"],
+datasets:[
+{
+label:a.name,
+data:[a.hp,100-a.speed*20],
+backgroundColor:"blue"
+},
+{
+label:b.name,
+data:[b.hp,100-b.speed*20],
+backgroundColor:"red"
+}
+]
+}
+});
+
 }
 
 render();
