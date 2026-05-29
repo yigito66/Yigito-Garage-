@@ -28,45 +28,57 @@ input{
     padding:12px;
     border:none;
     border-radius:8px;
-    margin-bottom:20px;
+    margin-bottom:15px;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
     gap:15px;
 }
 
 .card{
     background:#162238;
-    padding:15px;
+    padding:12px;
     border-radius:12px;
 }
 
 .card img{
     width:100%;
-    height:150px;
+    height:140px;
     object-fit:cover;
     border-radius:10px;
 }
 
 button{
-    margin-top:8px;
     width:100%;
-    padding:10px;
+    padding:8px;
+    margin-top:6px;
     border:none;
     border-radius:8px;
     cursor:pointer;
 }
 
-.fav{background:#f59e0b;color:black;}
-.cmp{background:#3b82f6;color:white;}
+.fav{background:#f59e0b;}
+.sel{background:#3b82f6;color:white;}
+
+.topbar{
+    display:flex;
+    gap:8px;
+    margin-bottom:15px;
+}
+
+.topbar button{
+    flex:1;
+    background:#1f2a44;
+    color:white;
+}
 
 .compareBox{
     background:#1f2a44;
     padding:15px;
     border-radius:10px;
-    margin-bottom:20px;
+    margin-bottom:15px;
 }
 
 table{
@@ -84,16 +96,23 @@ td,th{
 
 <body>
 
-<header>🚗 Yiğit Automotive</header>
+<header>🚗 Yiğit Automotive V3</header>
 
 <div class="container">
 
 <input id="search" placeholder="Araba ara..." oninput="render()">
 
+<div class="topbar">
+<button onclick="mode='all';render()">Tümü</button>
+<button onclick="mode='fav';render()">Favoriler</button>
+<button onclick="mode='power';render()">En Güçlü</button>
+<button onclick="mode='fast';render()">En Hızlı</button>
+</div>
+
 <div class="compareBox">
-<h3>Karşılaştırma (2 araba seç)</h3>
-<div id="selected">Henüz seçim yok</div>
-<button onclick="showCompare()">Karşılaştır</button>
+<h3>⚖️ Karşılaştır (2 araba seç)</h3>
+<div id="selected">Seçim yok</div>
+<button onclick="compare()">Karşılaştır</button>
 </div>
 
 <div class="grid" id="list"></div>
@@ -104,56 +123,47 @@ td,th{
 
 <script>
 
-let cars = [
-{
-name:"BMW M3",
-hp:510,
-speed:3.9,
-img:"https://upload.wikimedia.org/wikipedia/commons/1/18/BMW_M3_G80.jpg",
-fav:false
-},
-{
-name:"Mercedes C63",
-hp:680,
-speed:3.4,
-img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Mercedes-AMG_C63_S.jpg",
-fav:false
-},
-{
-name:"Audi RS5",
-hp:450,
-speed:3.7,
-img:"https://upload.wikimedia.org/wikipedia/commons/6/6e/Audi_RS5.jpg",
-fav:false
-},
-{
-name:"Toyota Supra",
-hp:382,
-speed:4.1,
-img:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_Supra_A90.jpg",
-fav:false
-}
-];
+let mode="all";
+let selected=[];
 
-let selected = [];
+let cars=[
+{name:"BMW M3",hp:510,speed:3.9,img:"https://upload.wikimedia.org/wikipedia/commons/1/18/BMW_M3_G80.jpg",fav:false},
+{name:"BMW M5",hp:727,speed:3.4,img:"https://upload.wikimedia.org/wikipedia/commons/2/2d/BMW_M5_F90.jpg",fav:false},
+{name:"Mercedes C63",hp:680,speed:3.4,img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Mercedes-AMG_C63_S.jpg",fav:false},
+{name:"Mercedes E63",hp:612,speed:3.3,img:"https://upload.wikimedia.org/wikipedia/commons/0/0e/Mercedes-AMG_E63_S.jpg",fav:false},
+{name:"Audi RS5",hp:450,speed:3.7,img:"https://upload.wikimedia.org/wikipedia/commons/6/6e/Audi_RS5.jpg",fav:false},
+{name:"Audi RS7",hp:600,speed:3.5,img:"https://upload.wikimedia.org/wikipedia/commons/4/4f/Audi_RS7.jpg",fav:false},
+{name:"Toyota Supra",hp:382,speed:4.1,img:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_Supra_A90.jpg",fav:false},
+{name:"Nissan GTR",hp:600,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/3/3a/Nissan_GT-R.jpg",fav:false},
+{name:"Porsche 911 Turbo S",hp:650,speed:2.7,img:"https://upload.wikimedia.org/wikipedia/commons/0/0b/Porsche_911_Turbo_S.jpg",fav:false},
+{name:"Chevrolet Corvette",hp:495,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/4/4c/Chevrolet_Corvette_C8.jpg",fav:false},
+{name:"Lamborghini Huracan",hp:640,speed:2.8,img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Lamborghini_Huracan.jpg",fav:false},
+{name:"Ferrari F8",hp:720,speed:2.9,img:"https://upload.wikimedia.org/wikipedia/commons/7/7d/Ferrari_F8_Tributo.jpg",fav:false}
+];
 
 function render(){
 
-let q = document.getElementById("search").value.toLowerCase();
-let list = document.getElementById("list");
-list.innerHTML = "";
+let q=document.getElementById("search").value.toLowerCase();
+let list=document.getElementById("list");
+list.innerHTML="";
 
-cars.filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>{
+let data=cars.filter(c=>c.name.toLowerCase().includes(q));
 
-list.innerHTML += `
+if(mode==="fav") data=data.filter(c=>c.fav);
+if(mode==="power") data=data.sort((a,b)=>b.hp-a.hp);
+if(mode==="fast") data=data.sort((a,b)=>a.speed-b.speed);
+
+data.forEach(c=>{
+
+list.innerHTML+=`
 <div class="card">
 <img src="${c.img}">
 <h3>${c.name}</h3>
 <p>💪 ${c.hp} HP</p>
 <p>⚡ 0-100: ${c.speed}s</p>
 
-<button class="fav" onclick="toggleFav('${c.name}')">⭐ Favori</button>
-<button class="cmp" onclick="selectCar('${c.name}')">⚖️ Seç</button>
+<button class="fav" onclick="fav('${c.name}')">⭐ Favori</button>
+<button class="sel" onclick="select('${c.name}')">⚖️ Seç</button>
 </div>
 `;
 
@@ -161,35 +171,35 @@ list.innerHTML += `
 
 }
 
-function toggleFav(name){
-let car = cars.find(c=>c.name===name);
-car.fav = !car.fav;
+function fav(name){
+let c=cars.find(x=>x.name===name);
+c.fav=!c.fav;
 render();
 }
 
-function selectCar(name){
+function select(name){
 
 if(selected.includes(name)){
-selected = selected.filter(c=>c!==name);
+selected=selected.filter(x=>x!==name);
 }else{
 if(selected.length<2) selected.push(name);
 }
 
-document.getElementById("selected").innerHTML =
-selected.length ? selected.join(" vs ") : "Henüz seçim yok";
+document.getElementById("selected").innerHTML=
+selected.length?selected.join(" vs "):"Seçim yok";
 }
 
-function showCompare(){
+function compare(){
 
 if(selected.length<2){
 alert("2 araba seç!");
 return;
 }
 
-let a = cars.find(c=>c.name===selected[0]);
-let b = cars.find(c=>c.name===selected[1]);
+let a=cars.find(x=>x.name===selected[0]);
+let b=cars.find(x=>x.name===selected[1]);
 
-document.getElementById("result").innerHTML = `
+document.getElementById("result").innerHTML=`
 <div class="compareBox">
 <table>
 <tr><th>Özellik</th><th>${a.name}</th><th>${b.name}</th></tr>
