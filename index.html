@@ -21,9 +21,7 @@ header{
     background:#111a2e;
 }
 
-.container{
-    padding:20px;
-}
+.container{padding:20px;}
 
 input{
     width:100%;
@@ -47,6 +45,8 @@ input{
 
 .card img{
     width:100%;
+    height:150px;
+    object-fit:cover;
     border-radius:10px;
 }
 
@@ -62,16 +62,22 @@ button{
 .fav{background:#f59e0b;color:black;}
 .cmp{background:#3b82f6;color:white;}
 
-.topbar{
-    display:flex;
-    gap:10px;
+.compareBox{
+    background:#1f2a44;
+    padding:15px;
+    border-radius:10px;
     margin-bottom:20px;
 }
 
-.topbar button{
-    flex:1;
-    background:#1f2a44;
-    color:white;
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+td,th{
+    border:1px solid #333;
+    padding:8px;
+    text-align:center;
 }
 </style>
 </head>
@@ -84,14 +90,15 @@ button{
 
 <input id="search" placeholder="Araba ara..." oninput="render()">
 
-<div class="topbar">
-<button onclick="showAll()">Tümü</button>
-<button onclick="showFav()">Favoriler</button>
-<button onclick="showFast()">En Hızlı</button>
-<button onclick="showPower()">En Güçlü</button>
+<div class="compareBox">
+<h3>Karşılaştırma (2 araba seç)</h3>
+<div id="selected">Henüz seçim yok</div>
+<button onclick="showCompare()">Karşılaştır</button>
 </div>
 
 <div class="grid" id="list"></div>
+
+<div id="result"></div>
 
 </div>
 
@@ -102,40 +109,33 @@ let cars = [
 name:"BMW M3",
 hp:510,
 speed:3.9,
-img:"https://cdn.motor1.com/images/mgl/0ANXo/s1/bmw-m3-2021.jpg",
+img:"https://upload.wikimedia.org/wikipedia/commons/1/18/BMW_M3_G80.jpg",
 fav:false
 },
 {
 name:"Mercedes C63",
 hp:680,
 speed:3.4,
-img:"https://cdn.motor1.com/images/mgl/8eG9v/s1/mercedes-amg-c63-s-e-performance.jpg",
+img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Mercedes-AMG_C63_S.jpg",
 fav:false
 },
 {
 name:"Audi RS5",
 hp:450,
 speed:3.7,
-img:"https://cdn.motor1.com/images/mgl/1ZxXq/s1/audi-rs5-sportback.jpg",
+img:"https://upload.wikimedia.org/wikipedia/commons/6/6e/Audi_RS5.jpg",
 fav:false
 },
 {
 name:"Toyota Supra",
 hp:382,
 speed:4.1,
-img:"https://cdn.motor1.com/images/mgl/6Zx9e/s1/toyota-supra.jpg",
-fav:false
-},
-{
-name:"Nissan GTR",
-hp:600,
-speed:2.9,
-img:"https://cdn.motor1.com/images/mgl/2Zx8e/s1/nissan-gt-r.jpg",
+img:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_Supra_A90.jpg",
 fav:false
 }
 ];
 
-let mode = "all";
+let selected = [];
 
 function render(){
 
@@ -143,13 +143,7 @@ let q = document.getElementById("search").value.toLowerCase();
 let list = document.getElementById("list");
 list.innerHTML = "";
 
-let filtered = cars.filter(c=>c.name.toLowerCase().includes(q));
-
-if(mode==="fav") filtered = filtered.filter(c=>c.fav);
-if(mode==="fast") filtered = filtered.sort((a,b)=>a.speed-b.speed);
-if(mode==="power") filtered = filtered.sort((a,b)=>b.hp-a.hp);
-
-filtered.forEach((c,i)=>{
+cars.filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>{
 
 list.innerHTML += `
 <div class="card">
@@ -158,13 +152,8 @@ list.innerHTML += `
 <p>💪 ${c.hp} HP</p>
 <p>⚡ 0-100: ${c.speed}s</p>
 
-<button class="fav" onclick="toggleFav('${c.name}')">
-⭐ Favori
-</button>
-
-<button class="cmp" onclick="compare('${c.name}')">
-⚖️ Karşılaştır
-</button>
+<button class="fav" onclick="toggleFav('${c.name}')">⭐ Favori</button>
+<button class="cmp" onclick="selectCar('${c.name}')">⚖️ Seç</button>
 </div>
 `;
 
@@ -178,13 +167,37 @@ car.fav = !car.fav;
 render();
 }
 
-function showAll(){ mode="all"; render(); }
-function showFav(){ mode="fav"; render(); }
-function showFast(){ mode="fast"; render(); }
-function showPower(){ mode="power"; render(); }
+function selectCar(name){
 
-function compare(name){
-alert(name + " karşılaştırma seçildi (V2'de tablo yapacağız)");
+if(selected.includes(name)){
+selected = selected.filter(c=>c!==name);
+}else{
+if(selected.length<2) selected.push(name);
+}
+
+document.getElementById("selected").innerHTML =
+selected.length ? selected.join(" vs ") : "Henüz seçim yok";
+}
+
+function showCompare(){
+
+if(selected.length<2){
+alert("2 araba seç!");
+return;
+}
+
+let a = cars.find(c=>c.name===selected[0]);
+let b = cars.find(c=>c.name===selected[1]);
+
+document.getElementById("result").innerHTML = `
+<div class="compareBox">
+<table>
+<tr><th>Özellik</th><th>${a.name}</th><th>${b.name}</th></tr>
+<tr><td>HP</td><td>${a.hp}</td><td>${b.hp}</td></tr>
+<tr><td>0-100</td><td>${a.speed}s</td><td>${b.speed}s</td></tr>
+</table>
+</div>
+`;
 }
 
 render();
